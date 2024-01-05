@@ -8,6 +8,7 @@ authors = ["kei-600th <kei19941005@gmail.com>"]
 python = "^3.11.3"
 slack-bolt = "1.18.0"
 python-dotenv = "^1.0.0"
+APScheduler = "^3.10.4"
 
 [tool.poetry.dev-dependencies]
 
