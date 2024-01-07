@@ -35,6 +35,14 @@ def handle_mention(event, say):
 
         # 上2桁が0～23、下2桁が0～59の範囲内かチェック
         if 0 <= upper_two_digits <= 23 and 0 <= lower_two_digits <= 59:
+
+            # 既存のジョブを削除
+            if scheduler.get_job(job_name):
+                scheduler.remove_job(job_name)
+
+            # 新しい時間でジョブを追加
+            scheduler.add_job(send_message, 'cron', hour=upper_two_digits, minute=lower_two_digits, id=job_name)
+            
             # 条件を満たしている場合のメッセージ
             say(f"設定された時間: {upper_two_digits}時{lower_two_digits}分")
         else:
@@ -44,9 +52,12 @@ def handle_mention(event, say):
         # 4桁の数字でなければ、4桁の数字を入力するように促す
         say("4桁の数字を入力してください。")
 
-# APSchedulerの設定とスケジューラーの開始
+# ジョブの名前を定義
+job_name = "send_message_job"
+
+# スケジューラーの設定とジョブの追加
 scheduler = BackgroundScheduler()
-scheduler.add_job(send_message, 'cron', hour=14, minute=55)
+scheduler.add_job(send_message, 'cron', hour=14, minute=55, id=job_name)
 scheduler.start()
 
 # アプリを起動
