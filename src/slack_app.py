@@ -1,4 +1,5 @@
 import os
+import re
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from dotenv import load_dotenv
@@ -20,7 +21,12 @@ def send_message():
 @app.event("app_mention")
 def handle_mention(event, say):
     """アプリに対するメンションに応答する。"""
-    say("Hello Slack!")
+    # メンションされたメッセージのテキストを取得
+    text = event['text']
+    # メンションを除去する（例：<@U123ABCD>）
+    cleaned_text = re.sub(r"<@[\w]+>", "", text).strip()
+    # メンションを除いたテキストを返信
+    say(cleaned_text)
 
 # APSchedulerの設定とスケジューラーの開始
 scheduler = BackgroundScheduler()
