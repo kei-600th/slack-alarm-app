@@ -23,10 +23,26 @@ def handle_mention(event, say):
     """アプリに対するメンションに応答する。"""
     # メンションされたメッセージのテキストを取得
     text = event['text']
-    # メンションを除去する（例：<@U123ABCD>）
+    # メンションを除去する
     cleaned_text = re.sub(r"<@[\w]+>", "", text).strip()
-    # メンションを除いたテキストを返信
-    say(cleaned_text)
+
+    # テキストが4桁の数字であるかチェック
+    if re.match(r"^\d{4}$", cleaned_text):
+        # 4桁の数字ならそのまま返信
+        # 上2桁と下2桁に分割
+        upper_two_digits = int(cleaned_text[:2])
+        lower_two_digits = int(cleaned_text[2:])
+
+        # 上2桁が0～23、下2桁が0～59の範囲内かチェック
+        if 0 <= upper_two_digits <= 23 and 0 <= lower_two_digits <= 59:
+            # 条件を満たしている場合のメッセージ
+            say(f"設定された時間: {upper_two_digits}時{lower_two_digits}分")
+        else:
+            # 条件を満たさない場合のメッセージ
+            say("時間は上2桁が0～23、下2桁が0～59の範囲で指定してください。")
+    else:
+        # 4桁の数字でなければ、4桁の数字を入力するように促す
+        say("4桁の数字を入力してください。")
 
 # APSchedulerの設定とスケジューラーの開始
 scheduler = BackgroundScheduler()
