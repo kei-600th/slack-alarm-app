@@ -15,7 +15,10 @@ app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 def send_message():
     """Slackチャンネルに定期的なメッセージを送信する。"""
     channel_id = os.environ["SLACK_CHANNEL_ID"]  # メッセージを送信するチャンネルID
-    app.client.chat_postMessage(channel=channel_id, text="Hello Slack!")
+    user_id = os.environ["MENTION_USER_ID"]  # メンションするユーザーID
+    # メンションを含むメッセージを作成
+    message_text = f"<@{user_id}> おはようございます！"
+    app.client.chat_postMessage(channel=channel_id, text=message_text)
 
 # アプリに対するメンションに応答する関数定義
 @app.event("app_mention")
@@ -42,7 +45,7 @@ def handle_mention(event, say):
 
             # 新しい時間でジョブを追加
             scheduler.add_job(send_message, 'cron', hour=upper_two_digits, minute=lower_two_digits, id=job_name)
-            
+
             # 条件を満たしている場合のメッセージ
             say(f"設定された時間: {upper_two_digits}時{lower_two_digits}分")
         else:
