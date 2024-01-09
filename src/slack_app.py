@@ -12,33 +12,15 @@ load_dotenv()
 # ボットトークンとソケットモードハンドラーを使ってアプリを初期化
 app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 
-# メッセージ送信回数のカウンター
-message_count = 0
-
 # スケジューリングされたジョブの関数定義
 
 
 def send_message():
-    global message_count
-    """Slackチャンネルに定期的なメッセージを送信する。"""
     channel_id = os.environ["SLACK_CHANNEL_ID"]  # メッセージを送信するチャンネルID
     user_id = os.environ["MENTION_USER_ID"]  # メンションするユーザーID
     # メンションを含むメッセージを作成
     message_text = f"<@{user_id}> おはようございます！"
     app.client.chat_postMessage(channel=channel_id, text=message_text)
-
-    # メッセージ送信回数を更新
-    message_count += 1
-
-    # 5回送信したらジョブを削除
-    if message_count >= 5:
-        scheduler.remove_job(job_name)
-        message_count = 0  # カウンターをリセット
-    else:
-        # 1分後に再度この関数を実行するジョブをスケジュール
-        next_minute = datetime.datetime.now() + datetime.timedelta(minutes=1)
-        scheduler.add_job(send_message, 'date',
-                          run_date=next_minute, id=job_name)
 
 # アプリに対するメンションに応答する関数定義
 
@@ -73,11 +55,13 @@ def handle_mention(event, say):
             # 既存のジョブを削除し、新しいジョブを追加
             if scheduler.get_job(job_name):
                 scheduler.remove_job(job_name)
-            scheduler.add_job(send_message, 'date',
-                              run_date=start_time, id=job_name)
+            # 5回分のジョブを1分間隔で追加
+            for i in range(5):
+                run_time = start_time + datetime.timedelta(minutes=i)
+                scheduler.add_job(send_message, 'date',
+                                  run_date=run_time, id=f"{job_name}_{i}")
 
-            # 条件を満たしている場合のメッセージ
-            say(f"設定された時間: {upper_two_digits}時{lower_two_digits}分")
+            say(f"設定された時間: {upper_two_digits}時{lower_two_digits}分から5回、1分間隔でメッセージを送信します。")
         else:
             # 条件を満たさない場合のメッセージ
             say("時間は上2桁が0～23、下2桁が0～59の範囲で指定してください。")
