@@ -31,7 +31,8 @@ def send_message():
 
 @app.event("app_mention")
 def handle_mention(event, say):
-    if event['channel'] == 'C06C3UPM4E8':
+    # アラーム設定チャンネルメンション時の挙動
+    if event['channel'] == ALERM_SETTING_CHANNEL_ID:
         # メンションされたメッセージのテキストを取得
         text = event['text']
         # メンションを除去する
@@ -73,7 +74,7 @@ def handle_mention(event, say):
             # 4桁の数字でなければ、4桁の数字を入力するように促す
             say("4桁の数字を入力してください。")
 
-    # 特定のメッセージが含まれているかチェック
+    # アラームチャンネルメンション時の挙動
     elif event['channel'] == ALERM_CHANNEL_ID:
         # スケジューラーに設定されている全てのジョブを削除
         jobs = scheduler.get_jobs()
