@@ -16,6 +16,8 @@ app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 message_count = 0
 
 # スケジューリングされたジョブの関数定義
+
+
 def send_message():
     global message_count
     """Slackチャンネルに定期的なメッセージを送信する。"""
@@ -35,9 +37,12 @@ def send_message():
     else:
         # 1分後に再度この関数を実行するジョブをスケジュール
         next_minute = datetime.datetime.now() + datetime.timedelta(minutes=1)
-        scheduler.add_job(send_message, 'date', run_date=next_minute, id=job_name)
+        scheduler.add_job(send_message, 'date',
+                          run_date=next_minute, id=job_name)
 
 # アプリに対するメンションに応答する関数定義
+
+
 @app.event("app_mention")
 def handle_mention(event, say):
     """アプリに対するメンションに応答する。"""
@@ -56,16 +61,20 @@ def handle_mention(event, say):
         # 上2桁が0～23、下2桁が0～59の範囲内かチェック
         if 0 <= upper_two_digits <= 23 and 0 <= lower_two_digits <= 59:
 
-            # 既存のジョブを削除
+            # 現在の日時を取得
+            now = datetime.datetime.now()
+            # 指定された時間で日時オブジェクトを作成
+            start_time = now.replace(
+                hour=upper_two_digits, minute=lower_two_digits, second=0)
+            # 指定された時間が過去であれば、次の日に設定
+            if start_time < now:
+                start_time += datetime.timedelta(days=1)
+
+            # 既存のジョブを削除し、新しいジョブを追加
             if scheduler.get_job(job_name):
                 scheduler.remove_job(job_name)
-
-            # メッセージ送信カウンターをリセット
-            message_count = 0
-
-            # 新しい時間でジョブを追加
-            start_time = datetime.datetime.now().replace(hour=upper_two_digits, minute=lower_two_digits, second=0)
-            scheduler.add_job(send_message, 'date', run_date=start_time, id=job_name)
+            scheduler.add_job(send_message, 'date',
+                              run_date=start_time, id=job_name)
 
             # 条件を満たしている場合のメッセージ
             say(f"設定された時間: {upper_two_digits}時{lower_two_digits}分")
@@ -75,6 +84,7 @@ def handle_mention(event, say):
     else:
         # 4桁の数字でなければ、4桁の数字を入力するように促す
         say("4桁の数字を入力してください。")
+
 
 # ジョブの名前を定義
 job_name = "send_message_job"
