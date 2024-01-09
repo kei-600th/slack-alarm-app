@@ -1,3 +1,4 @@
+import datetime
 import os
 import re
 from slack_bolt import App
@@ -11,14 +12,30 @@ load_dotenv()
 # ボットトークンとソケットモードハンドラーを使ってアプリを初期化
 app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 
+# メッセージ送信回数のカウンター
+message_count = 0
+
 # スケジューリングされたジョブの関数定義
 def send_message():
+    global message_count
     """Slackチャンネルに定期的なメッセージを送信する。"""
     channel_id = os.environ["SLACK_CHANNEL_ID"]  # メッセージを送信するチャンネルID
     user_id = os.environ["MENTION_USER_ID"]  # メンションするユーザーID
     # メンションを含むメッセージを作成
     message_text = f"<@{user_id}> おはようございます！"
     app.client.chat_postMessage(channel=channel_id, text=message_text)
+
+    # メッセージ送信回数を更新
+    message_count += 1
+
+    # 5回送信したらジョブを削除
+    if message_count >= 5:
+        scheduler.remove_job(job_name)
+        message_count = 0  # カウンターをリセット
+    else:
+        # 1分後に再度この関数を実行するジョブをスケジュール
+        next_minute = datetime.datetime.now() + datetime.timedelta(minutes=1)
+        scheduler.add_job(send_message, 'date', run_date=next_minute, id=job_name)
 
 # アプリに対するメンションに応答する関数定義
 @app.event("app_mention")
@@ -43,8 +60,12 @@ def handle_mention(event, say):
             if scheduler.get_job(job_name):
                 scheduler.remove_job(job_name)
 
+            # メッセージ送信カウンターをリセット
+            message_count = 0
+
             # 新しい時間でジョブを追加
-            scheduler.add_job(send_message, 'cron', hour=upper_two_digits, minute=lower_two_digits, id=job_name)
+            start_time = datetime.datetime.now().replace(hour=upper_two_digits, minute=lower_two_digits, second=0)
+            scheduler.add_job(send_message, 'date', run_date=start_time, id=job_name)
 
             # 条件を満たしている場合のメッセージ
             say(f"設定された時間: {upper_two_digits}時{lower_two_digits}分")
@@ -58,11 +79,10 @@ def handle_mention(event, say):
 # ジョブの名前を定義
 job_name = "send_message_job"
 
-# スケジューラーの設定とジョブの追加
+# スケジューラーの初期設定
 scheduler = BackgroundScheduler()
-scheduler.add_job(send_message, 'cron', hour=14, minute=55, id=job_name)
-scheduler.start()
 
 # アプリを起動
 if __name__ == "__main__":
+    scheduler.start()
     SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
