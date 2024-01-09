@@ -80,7 +80,7 @@ def handle_mention(event, say):
         jobs = scheduler.get_jobs()
         for job in jobs:
             scheduler.remove_job(job.id)
-        say("全てのジョブを削除しました。")
+        say("アラームを解除しました")
         return
 
 
